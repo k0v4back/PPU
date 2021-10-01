@@ -1,2 +1,6 @@
 .mxproject
 /MDK-ARM/startup_stm32l051xx.lst
+/MDK-ARM/RTE/
+/MDK-ARM/PPU/
+/MDK-ARM/PPU.uvguix.vadko
+/MDK-ARM/DebugConfig/
