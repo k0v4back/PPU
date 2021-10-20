@@ -16,155 +16,297 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
+
+#include "stdio.h"
 #include "main.h"
+#include "lcd.h"
+#include "main_loop.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 
-/* USER CODE END Includes */
+UART_HandleTypeDef huart1;
+UART_HandleTypeDef hlpuart1;
+I2C_HandleTypeDef hi2c2;
+ADC_HandleTypeDef hadc1;
+TIM_HandleTypeDef htim6;
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
 
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-/* USER CODE BEGIN PFP */
+static void GPIO_Init(void);
+static void USB_UART_Init(void);
+static void LPUART_RS485(void);
+static void I2C_LCD_Init(void);
+//static void ADC_Init(void);
+void TIM6_Init(void);
 
-/* USER CODE END PFP */
 
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-	int x =2;
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  MX_GPIO_Init();
-  /* USER CODE BEGIN 2 */
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+  GPIO_Init();
+	USB_UART_Init();
+	LPUART_RS485();
+	TIM6_Init();
+	//ADC_Init();
+	LCD_Init();
+	LCD_Clear();	
+	HAL_TIM_Base_Start_IT(&htim6);
+	//__HAL_UART_ENABLE_IT(&huart1,UART_IT_RXNE);
+	
   while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
+			loop();
   }
-  /* USER CODE END 3 */
+	
 }
 
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage
-  */
+  
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-  /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+  
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_8;
-  RCC_OscInitStruct.PLL.PLLDIV = RCC_PLLDIV_2;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
-  /** Initializes the CPU, AHB and APB buses clocks
-  */
+  
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSE;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
     Error_Handler();
   }
 }
 
-/**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_GPIO_Init(void)
-{
 
-  /* GPIO Ports Clock Enable */
+static void GPIO_Init(void)
+{
+  __HAL_RCC_SYSCFG_CLK_ENABLE();
+  __HAL_RCC_PWR_CLK_ENABLE();
+	
+	//тактирование портов
   __HAL_RCC_GPIOH_CLK_ENABLE();
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	
+	GPIO_InitTypeDef GPIO_InitStruct;
+		
+	/* USART1 for USB 
+		GPIO Configuration
+     PA9     ------> USB_UART_TX_Pin
+     PA10     ------> USB_UART_RX_Pin
+  */
+    GPIO_InitStruct.Pin = USB_UART_TX_Pin  |USB_UART_RX_Pin  ;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF0_USART1;
+    HAL_GPIO_Init(USB_UART_Port, &GPIO_InitStruct);
+			
+		/*USART2 for RS485
+		GPIO Configuration
+     PB10     ------> LPUART_RS485_TX_Pin 
+     PB11     ------> LPUART_RS485_RX_Pin
+		 PB1      ------> LPUART_RS485_DE_Pin (Hardware Flow Control)
+    */
+		GPIO_InitStruct.Pin = LPUART_RS485_RX_Pin | LPUART_RS485_TX_Pin | LPUART_RS485_DE_Pin ;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF0_LPUART1;
+    HAL_GPIO_Init(LPUART_RS485_Port, &GPIO_InitStruct);
+		HAL_GPIO_WritePin(LPUART_RS485_Port,LPUART_RS485_DE_Pin,GPIO_PIN_SET); 
+		
+		/*
+		ADC1 GPIO Configuration
+		PA0    ------>ADC1_IN0_vrX_Pin 
+		PA1    ------>ADC1_IN1_vrY_Pin 
+		*/
+		GPIO_InitStruct.Pin = ADC1_IN0_vrX_Pin|ADC1_IN0_vrY_Pin;
+		GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+		HAL_GPIO_Init(ADC1_Port, &GPIO_InitStruct);
+		
+		/*
+		I2C2 GPIO Configuration
+		PB13    ------>I2C_SCL_Pin 
+		PB14    ------>I2C_SDA_Pin 
+		*/
+		GPIO_InitStruct.Pin = I2C_SCL_Pin|I2C_SDA_Pin;
+		GPIO_InitStruct.Alternate = GPIO_AF5_I2C2;
+		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+		HAL_GPIO_Init(I2C_Port, &GPIO_InitStruct);
+		
+		/*
+		LCD1602 GPIO Config(RS,D4,D5,D6,D7,BL,EN) and (LCD_BL_Pin,LCD_Enable)
+		*/
+		GPIO_InitStruct.Pin = LCD_RS_Pin|LCD_D4_Pin|LCD_D5_Pin|LCD_D6_Pin|LCD_D7_Pin;
+		GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+		HAL_GPIO_Init(LCD_Data_Port, &GPIO_InitStruct);
+		HAL_GPIO_WritePin(LCD_Data_Port,LCD_RS_Pin|LCD_D4_Pin|LCD_D5_Pin|LCD_D6_Pin|LCD_D7_Pin,GPIO_PIN_RESET);
+		
+		GPIO_InitStruct.Pin = LCD_BL_Pin|LCD_Enable_Pin|MODE_Pin;
+		GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+		HAL_GPIO_Init(LCD_BL_EN_Port, &GPIO_InitStruct);
+		
+		HAL_GPIO_WritePin(LCD_BL_EN_Port,LCD_Enable_Pin,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(LCD_BL_EN_Port,LCD_BL_Pin,GPIO_PIN_SET); // backlight ON
 
 }
 
-/* USER CODE BEGIN 4 */
+static void USB_UART_Init(void)
+{
+  __HAL_RCC_USART1_CLK_ENABLE();
 
-/* USER CODE END 4 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+	
+		HAL_NVIC_SetPriority(USART1_IRQn,0,0);
+		HAL_NVIC_EnableIRQ(USART1_IRQn);
+}
 
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+static void LPUART_RS485(void)
+{
+	__HAL_RCC_LPUART1_CLK_ENABLE();
+	
+	hlpuart1.Instance = LPUART1;
+  hlpuart1.Init.BaudRate = 4800;
+	hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
+  hlpuart1.Init.StopBits = UART_STOPBITS_1;
+  hlpuart1.Init.Parity = UART_PARITY_NONE;
+  //hlpuart1.Init.Mode = UART_MODE_TX_RX;
+	hlpuart1.Init.Mode  = UART_MODE_TX;
+  hlpuart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  hlpuart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&hlpuart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+static void I2C_LCD_Init(void)
+{
+		__HAL_RCC_I2C2_CLK_ENABLE();
+		hi2c2.Instance = I2C2;	
+	//	hi2c2.Init.Timing = 0x2000090E; // standard mode
+    //hi2c2.Init.Timing = 0x00901D23;
+	  hi2c2.Init.Timing = 0x00000708;
+		hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+		hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+		hi2c2.Init.OwnAddress1 = 0; 
+		hi2c2.Init.OwnAddress2 = 0;
+		hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+		hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+		hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
+		if( HAL_I2C_Init(&hi2c2) != HAL_OK) 
+		{
+			Error_Handler();
+		}
+		
+		if( HAL_I2CEx_ConfigAnalogFilter(&hi2c2,I2C_ANALOGFILTER_ENABLE) != HAL_OK) 
+		{
+			Error_Handler();
+		}
+
+}
+
+
+
+/*
+static void ADC_Init(void)
+{
+		__HAL_RCC_ADC1_CLK_ENABLE();
+			// For  Vdda ( 2.4 to 3.6 V ) FREQ MAXIMUM = 36 MHz
+		hadc1.Instance = ADC1;  
+		hadc1.Init.ClockPrescaler = ADC_CLOCKPRESCALER_PCLK_DIV4; //21 MHz
+		hadc1.Init.Resolution = ADC_RESOLUTION_8B;
+		hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+	  hadc1.Init.ScanConvMode = ENABLE;
+		hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+		hadc1.Init.ContinuousConvMode = DISABLE;
+		hadc1.Init.NbrOfConversion = 2;
+		hadc1.Init.DiscontinuousConvMode = DISABLE;
+		//hadc1.Init.NbrOfDiscConversion = DISABLE;
+	  //hadc1.Init.ExternalTrigConv = ADC_EXTERNALTRIGCONV_T3_TRGO;
+	 //hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_RISING;
+		
+	if( HAL_ADC_Init(&hadc1) != HAL_OK)
+	{
+	 Error_Handler();
+	}
+	
+	//Configure Channel(injected) parameters
+	AdcInjectedChannel.InjectedChannel = ADC_CHANNEL_1;
+	AdcInjectedChannel.InjectedRank = ADC_INJECTED_RANK_1;
+	AdcInjectedChannel.InjectedSamplingTime = ADC_SAMPLETIME_15CYCLES;
+	AdcInjectedChannel.InjectedNbrOfConversion = 2;
+	AdcInjectedChannel.InjectedOffset = 0;
+	AdcInjectedChannel.AutoInjectedConv = DISABLE;
+	AdcInjectedChannel.InjectedDiscontinuousConvMode = DISABLE;
+	AdcInjectedChannel.ExternalTrigInjecConvEdge = ADC_EXTERNALTRIGINJECCONVEDGE_NONE;
+	HAL_ADCEx_InjectedConfigChannel(&hadc1,&AdcInjectedChannel);
+	
+	AdcInjectedChannel.InjectedChannel = ADC_CHANNEL_2;
+	AdcInjectedChannel.InjectedRank = ADC_INJECTED_RANK_2;
+	HAL_ADCEx_InjectedConfigChannel(&hadc1,&AdcInjectedChannel);
+	
+	//HAL_NVIC_SetPriority(ADC_IRQn,0,0);
+	//HAL_NVIC_EnableIRQ(ADC_IRQn);
+	
+	
+}*/
+
+
+
+
+void TIM6_Init() 
+{
+	__HAL_RCC_TIM6_CLK_ENABLE();
+	
+	htim6.Instance = TIM6;
+	htim6.Init.Prescaler = 7999;
+	htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+	htim6.Init.Period = 4999; 
+	htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+	HAL_TIM_Base_Init(&htim6);
+	
+	HAL_NVIC_EnableIRQ(TIM6_IRQn);
+	HAL_NVIC_SetPriority(TIM6_IRQn,0,0);
+	
+}
+
+
 void Error_Handler(void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)
   {
