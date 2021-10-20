@@ -27,40 +27,41 @@
 extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
+
 #include "stm32l0xx_hal.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
+#define USB_UART_TX_Pin GPIO_PIN_9
+#define USB_UART_RX_Pin GPIO_PIN_10
+#define USB_UART_Port GPIOA
 
-/* USER CODE END Includes */
+#define LPUART_RS485_TX_Pin GPIO_PIN_10
+#define LPUART_RS485_RX_Pin GPIO_PIN_11
+#define LPUART_RS485_DE_Pin GPIO_PIN_1
+#define LPUART_RS485_Port GPIOB
 
-/* Exported types ------------------------------------------------------------*/
-/* USER CODE BEGIN ET */
+#define ADC1_IN0_vrX_Pin GPIO_PIN_0
+#define ADC1_IN0_vrY_Pin GPIO_PIN_1
+#define ADC1_Port GPIOA
 
-/* USER CODE END ET */
+#define LCD_RS_Pin GPIO_PIN_3
+#define LCD_D4_Pin GPIO_PIN_4
+#define LCD_D5_Pin GPIO_PIN_5
+#define LCD_D6_Pin GPIO_PIN_6
+#define LCD_D7_Pin GPIO_PIN_7
+#define LCD_Data_Port GPIOA
 
-/* Exported constants --------------------------------------------------------*/
-/* USER CODE BEGIN EC */
+#define MODE_Pin   GPIO_PIN_12  // кнопка для смены режима( авто - мануал)
+#define LCD_BL_Pin GPIO_PIN_0
+#define LCD_Enable_Pin GPIO_PIN_2
+#define LCD_BL_EN_Port GPIOB 
 
-/* USER CODE END EC */
+#define I2C_SCL_Pin GPIO_PIN_13
+#define I2C_SDA_Pin GPIO_PIN_14
+#define I2C_Port GPIOB
 
-/* Exported macro ------------------------------------------------------------*/
-/* USER CODE BEGIN EM */
-
-/* USER CODE END EM */
-
-/* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
-/* USER CODE BEGIN EFP */
 
-/* USER CODE END EFP */
-
-/* Private defines -----------------------------------------------------------*/
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
 
 #ifdef __cplusplus
 }
