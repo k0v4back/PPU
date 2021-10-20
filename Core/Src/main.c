@@ -20,7 +20,7 @@
 #include "stdio.h"
 #include "main.h"
 #include "lcd.h"
-#include "main_loop.h"
+//#include "main_loop.h"
 
 
 UART_HandleTypeDef huart1;
