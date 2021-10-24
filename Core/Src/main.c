@@ -20,7 +20,7 @@
 #include "stdio.h"
 #include "main.h"
 #include "lcd.h"
-//#include "main_loop.h"
+#include "main_loop.h"
 
 
 UART_HandleTypeDef huart1;
@@ -34,11 +34,10 @@ void SystemClock_Config(void);
 static void GPIO_Init(void);
 static void USB_UART_Init(void);
 static void LPUART_RS485(void);
-static void I2C_LCD_Init(void);
 //static void ADC_Init(void);
 void TIM6_Init(void);
 
-
+uint16_t data;
 int main(void)
 {
 	
@@ -51,8 +50,8 @@ int main(void)
 	//ADC_Init();
 	LCD_Init();
 	LCD_Clear();	
-	HAL_TIM_Base_Start_IT(&htim6);
-	//__HAL_UART_ENABLE_IT(&huart1,UART_IT_RXNE);
+	//HAL_TIM_Base_Start_IT(&htim6);
+
 	
   while (1)
   {
@@ -113,7 +112,7 @@ static void GPIO_Init(void)
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF0_USART1;
+    GPIO_InitStruct.Alternate = GPIO_AF4_USART1;
     HAL_GPIO_Init(USB_UART_Port, &GPIO_InitStruct);
 			
 		/*USART2 for RS485
@@ -140,17 +139,6 @@ static void GPIO_Init(void)
 		GPIO_InitStruct.Pull = GPIO_NOPULL;
 		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
 		HAL_GPIO_Init(ADC1_Port, &GPIO_InitStruct);
-		
-		/*
-		I2C2 GPIO Configuration
-		PB13    ------>I2C_SCL_Pin 
-		PB14    ------>I2C_SDA_Pin 
-		*/
-		GPIO_InitStruct.Pin = I2C_SCL_Pin|I2C_SDA_Pin;
-		GPIO_InitStruct.Alternate = GPIO_AF5_I2C2;
-		GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-		HAL_GPIO_Init(I2C_Port, &GPIO_InitStruct);
 		
 		/*
 		LCD1602 GPIO Config(RS,D4,D5,D6,D7,BL,EN) and (LCD_BL_Pin,LCD_Enable)
@@ -213,36 +201,8 @@ static void LPUART_RS485(void)
   }
 }
 
-static void I2C_LCD_Init(void)
-{
-		__HAL_RCC_I2C2_CLK_ENABLE();
-		hi2c2.Instance = I2C2;	
-	//	hi2c2.Init.Timing = 0x2000090E; // standard mode
-    //hi2c2.Init.Timing = 0x00901D23;
-	  hi2c2.Init.Timing = 0x00000708;
-		hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-		hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-		hi2c2.Init.OwnAddress1 = 0; 
-		hi2c2.Init.OwnAddress2 = 0;
-		hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-		hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-		hi2c2.Init.OwnAddress2Masks = I2C_OA2_NOMASK;
-		if( HAL_I2C_Init(&hi2c2) != HAL_OK) 
-		{
-			Error_Handler();
-		}
-		
-		if( HAL_I2CEx_ConfigAnalogFilter(&hi2c2,I2C_ANALOGFILTER_ENABLE) != HAL_OK) 
-		{
-			Error_Handler();
-		}
 
-}
-
-
-
-/*
-static void ADC_Init(void)
+/*static void ADC_Init(void)
 {
 		__HAL_RCC_ADC1_CLK_ENABLE();
 			// For  Vdda ( 2.4 to 3.6 V ) FREQ MAXIMUM = 36 MHz
@@ -295,12 +255,12 @@ void TIM6_Init()
 	htim6.Instance = TIM6;
 	htim6.Init.Prescaler = 7999;
 	htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-	htim6.Init.Period = 4999; 
+	htim6.Init.Period = 2999; 
 	htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
 	HAL_TIM_Base_Init(&htim6);
 	
-	HAL_NVIC_EnableIRQ(TIM6_IRQn);
-	HAL_NVIC_SetPriority(TIM6_IRQn,0,0);
+	//HAL_NVIC_EnableIRQ(TIM6_IRQn);
+	//HAL_NVIC_SetPriority(TIM6_IRQn,0,0);
 	
 }
 
@@ -313,6 +273,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
+
 
 #ifdef  USE_FULL_ASSERT
 /**

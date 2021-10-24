@@ -29,6 +29,8 @@ extern "C" {
 
 
 #include "stm32l0xx_hal.h"
+#include "stm32l0xx.h"
+
 
 #define USB_UART_TX_Pin GPIO_PIN_9
 #define USB_UART_RX_Pin GPIO_PIN_10

@@ -23,8 +23,10 @@
 
 extern TIM_HandleTypeDef htim6;
 extern UART_HandleTypeDef huart1;
-extern volatile _Bool tim6_overflow_flag;
-extern volatile unsigned char RxBf;
+extern volatile _Bool usart1_interrupt_flag;
+extern volatile uint8_t RxBf[1];
+extern volatile uint8_t orbitron_buffer[13];
+extern volatile int buffer_position;
 
 
 void NMI_Handler(void)
@@ -66,18 +68,20 @@ void SysTick_Handler(void)
   HAL_IncTick();
   
 }
-
+/*
 void TIM6_IRQHandler(void)
 {
 	tim6_overflow_flag = 1;
 	HAL_TIM_IRQHandler(&htim6);
-}
+}*/
+
 
 void USART1_IRQHandler(void) 
 {
+	HAL_UART_Receive_IT(&huart1,RxBf,1);
 	HAL_UART_IRQHandler(&huart1);
-	HAL_UART_Receive_IT(&huart1,(uint8_t*)(&RxBf),1);
 }
+
 
 
 /******************************************************************************/
